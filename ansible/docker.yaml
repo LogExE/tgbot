@@ -43,15 +43,11 @@
         username: "{{ GHCR_LOGIN }}"
         password: "{{ GHCR_PASSWD }}"
       become: true
-    - name: Pull image
-      docker_image:
-        name: "{{ BOT_IMAGE_NAME }}"
-        source: pull
-      become: true
     - name: Run container
       docker_container:
         name: bot
         image: "{{ BOT_IMAGE_NAME }}"
+        pull: true
         env:
           TGBOT_TOKEN: "{{ TGBOT_TOKEN }}"
         state: started
