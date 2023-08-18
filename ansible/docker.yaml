@@ -1,8 +1,13 @@
 - hosts: all
   name: Setup docker
+  vars:
+    BOT_IMAGE_NAME: ghcr.io/logexe/tgbot:master
   tasks:
+    - name: Include credentials
+      ansible.builtin.include_vars:
+        file: secrets.yaml
     - name: Install docker deps
-      apt:
+      ansible.builtin.apt:
         pkg:
           - ca-certificates
           - curl
@@ -11,24 +16,44 @@
         update_cache: true
       become: true
     - name: Add docker gpg key
-      apt_key:
+      ansible.builtin.apt_key:
         url: https://download.docker.com/linux/debian/gpg
         state: present
       become: true
     - name: Add docker repo
-      apt_repository:
+      ansible.builtin.apt_repository:
         repo: deb https://download.docker.com/linux/debian bookworm stable
       become: true
     - name: Update apt + install docker
-      apt:
+      ansible.builtin.apt:
         pkg:
           - docker-ce
         state: latest
         update_cache: true
       become: true
     - name: Verify docker stuff
-      service:
+      ansible.builtin.service:
         name: docker
         state: started
         enabled: yes
+      become: true
+    - name: Login to GHCR
+      docker_login:
+        registry_url: https://ghcr.io/
+        username: "{{ GHCR_LOGIN }}"
+        password: "{{ GHCR_PASSWD }}"
+      become: true
+    - name: Pull image
+      docker_image:
+        name: "{{ BOT_IMAGE_NAME }}"
+        source: pull
+      become: true
+    - name: Run container
+      docker_container:
+        name: bot
+        image: "{{ BOT_IMAGE_NAME }}"
+        env:
+          TGBOT_TOKEN: "{{ TGBOT_TOKEN }}"
+        state: started
+        restart_policy: unless-stopped
       become: true
