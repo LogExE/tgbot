@@ -1,30 +1,26 @@
-
 import requests
 from bs4 import BeautifulSoup
 
 from enum import Enum
 from dataclasses import dataclass
 
+
 class SubjWeek(Enum):
     EVEN = 0
     ODD = 1
     EVERY = 2
 
-str_to_subjweek = {
-    "чис.": SubjWeek.EVEN,
-    "знам.": SubjWeek.ODD,
-    "": SubjWeek.EVERY
-}
+
+str_to_subjweek = {"чис.": SubjWeek.EVEN, "знам.": SubjWeek.ODD, "": SubjWeek.EVERY}
+
 
 class SubjType(Enum):
     LECTURE = 0
     PRACTICE = 1
 
-str_to_subjtype = {
-    "лек.": SubjType.LECTURE,
-    "пр.": SubjType.PRACTICE,
-    "": None
-}
+
+str_to_subjtype = {"лек.": SubjType.LECTURE, "пр.": SubjType.PRACTICE, "": None}
+
 
 @dataclass
 class Subject:
@@ -34,6 +30,7 @@ class Subject:
     other: str
     type: SubjType
     week: SubjWeek
+
 
 def get_subjects(url):
     page = requests.get(url)
@@ -54,10 +51,20 @@ def get_subjects(url):
                 name = e.find("div", {"class": "l-dn"})
                 teacher = e.find("div", {"class": "l-tn"})
                 place = e.find("div", {"class": "l-p"})
-                weekday.append(Subject(name=name.text, teacher=teacher.text, place=place.text, type=str_to_subjtype[type.text], other=other.text, week=str_to_subjweek[week.text]))
+                weekday.append(
+                    Subject(
+                        name=name.text,
+                        teacher=teacher.text,
+                        place=place.text,
+                        type=str_to_subjtype[type.text],
+                        other=other.text,
+                        week=str_to_subjweek[week.text],
+                    )
+                )
             weekdays[j].append(weekday)
 
     return weekdays
+
 
 if __name__ == "__main__":
     weekdays = get_subjects("https://www.sgu.ru/schedule/knt/do/341")
