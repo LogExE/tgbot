@@ -1,0 +1,34 @@
+- hosts: all
+  name: Setup docker
+  tasks:
+    - name: Install docker deps
+      apt:
+        pkg:
+          - ca-certificates
+          - curl
+          - gnupg
+        state: latest
+        update_cache: true
+      become: true
+    - name: Add docker gpg key
+      apt_key:
+        url: https://download.docker.com/linux/debian/gpg
+        state: present
+      become: true
+    - name: Add docker repo
+      apt_repository:
+        repo: deb https://download.docker.com/linux/debian bookworm stable
+      become: true
+    - name: Update apt + install docker
+      apt:
+        pkg:
+          - docker-ce
+        state: latest
+        update_cache: true
+      become: true
+    - name: Verify docker stuff
+      service:
+        name: docker
+        state: started
+        enabled: yes
+      become: true
