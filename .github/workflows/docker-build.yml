@@ -7,6 +7,9 @@ env:
   IMAGE_NAME: tgbot-uni
 jobs:
   push:
+    permissions:
+      packages: write
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
