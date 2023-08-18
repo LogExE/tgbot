@@ -66,8 +66,15 @@ def get_subjects(url):
     return weekdays
 
 
+def pretty_subjects(subjs):
+    lines = []
+    for i in range(6):
+        for j, subj in enumerate(subjs[i]):
+            if subj != []:
+                lines.append(f"День {i}, предмет {j}: {subj}")
+    return "\n".join(lines)
+
+
 if __name__ == "__main__":
     weekdays = get_subjects("https://www.sgu.ru/schedule/knt/do/341")
-    for i in range(6):
-        for j, subj in enumerate(weekdays[i]):
-            print(f"День {i}, предмет {j}: {subj}")
+    print(pretty_subjects(weekdays))

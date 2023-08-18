@@ -3,15 +3,20 @@ import logging
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 
+from uniparse import get_subjects, pretty_subjects
+
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id, text="I'm a bot, please talk to me!"
-    )
+async def get(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    data = pretty_subjects(get_subjects("https://www.sgu.ru/schedule/knt/do/341"))
+    for line in data.split('\n'):
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=line,
+        )
 
 
 if __name__ == "__main__":
@@ -24,7 +29,7 @@ if __name__ == "__main__":
 
     application = ApplicationBuilder().token(tok).build()
 
-    start_handler = CommandHandler("start", start)
+    start_handler = CommandHandler("get", get)
     application.add_handler(start_handler)
 
     application.run_polling()
