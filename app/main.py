@@ -81,6 +81,18 @@ async def day_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return DAY_SELECT
 
 
+async def same(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        f"Выберите день.",
+        reply_markup=ReplyKeyboardMarkup(
+            [DAYS],
+            one_time_keyboard=True,
+            input_field_placeholder="<группа>",
+        ),
+    )
+    return DAY_SELECT
+
+
 async def show(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.log(logging.INFO, "Day  %s", update.message.text)
     await update.message.reply_text(
@@ -92,7 +104,7 @@ async def show(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     )
     await update.message.reply_text(
-        "Для нового запроса напиши /another. Для выхода пиши /quit\n"
+        "Для нового запроса напиши /another. Если интересны те же параметры группы/факультета, набери /same. Для выхода пиши /quit\n"
         "Если расписание не отобразилось, то, скорее всего, бот еще не знает, как отображать расписание с вашего факультета."
     )
     return DONE
@@ -126,6 +138,7 @@ if __name__ == "__main__":
             DAY_SELECT: [MessageHandler(filters.TEXT & (~filters.COMMAND), show)],
             DONE: [
                 CommandHandler("another", fac_select),
+                CommandHandler("same", same),
                 CommandHandler("quit", cancel),
             ],
         },
