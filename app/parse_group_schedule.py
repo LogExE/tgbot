@@ -10,18 +10,24 @@ class SubjWeek(Enum):
     ODD = 1
     EVERY = 2
 
-
-str_to_subjweek = {"чис.": SubjWeek.EVEN, "знам.": SubjWeek.ODD, "": SubjWeek.EVERY}
-week_to_str = {SubjWeek.EVEN: "числитель", SubjWeek.ODD: "знаменатель"}
+    def __str__(self):
+        if self == SubjWeek.EVERY:
+            return "каждую неделю"
+        elif self == SubjWeek.EVEN:
+            return "по числителю"
+        else:
+            return "по знаменателю"
 
 
 class SubjType(Enum):
     LECTURE = 0
     PRACTICE = 1
 
-
-str_to_subjtype = {"лек.": SubjType.LECTURE, "пр.": SubjType.PRACTICE, "": None}
-type_to_str = {SubjType.LECTURE: "лекция", SubjType.PRACTICE: "практика"}
+    def __str__(self):
+        if self == SubjType.LECTURE:
+            return "лекция"
+        else:
+            return "практика"
 
 
 @dataclass
@@ -34,25 +40,32 @@ class Subject:
     week: SubjWeek
 
     def __str__(self):
-        week_str = (
-            "каждую неделю"
-            if self.week == SubjWeek.EVERY
-            else "по числителю"
-            if self.week == SubjWeek.EVEN
-            else "по знаменателю"
-        )
         return (
-            f"Пара: {type_to_str[self.type]}\n"
+            f"Пара: {self.type}\n"
             f"Предмет: {self.name}\n"
-            f"Проходит: {self.place}, {week_str}, {self.other}\n"
+            f"Проходит: {self.place}, {self.week}, {self.other}\n"
             f"Преподаватель: {self.teacher}."
         )
 
 
 DAYS = ["понедельник", "вторник", "среда", "четверг", "пятница", "суббота"]
 
+TIMES = [
+    "8:20-9:50",
+    "10:00-11:30",
+    "12:05-13:40",
+    "13:50-15:25",
+    "15:35-17:10",
+    "17:20-18:40",
+    "18:45-20:05",
+    "20:10-21:30",
+]
 
-def get_subjects(url: str) -> dict[str, list[list[Subject]]]:
+str_to_subjweek = {"чис.": SubjWeek.EVEN, "знам.": SubjWeek.ODD, "": SubjWeek.EVERY}
+str_to_subjtype = {"лек.": SubjType.LECTURE, "пр.": SubjType.PRACTICE, "": None}
+
+
+def get_group_schedule(url: str) -> dict[str, list[list[Subject]]]:
     page = requests.get(url)
     soup = BeautifulSoup(page.content, "html.parser")
     juicy_table = soup.find("table", {"id": "schedule"})
@@ -70,7 +83,7 @@ def get_subjects(url: str) -> dict[str, list[list[Subject]]]:
                 other = e.find("div", {"class": "l-pr-g"})
                 name = e.find("div", {"class": "l-dn"})
                 teacher = e.find("div", {"class": "l-tn"})
-                place = e.find("div", {"class": "l-p"})
+                place = e.find("div", {"class": "type_to_str[l-p"})
                 subjects.append(
                     Subject(
                         name=name.text,
@@ -85,9 +98,21 @@ def get_subjects(url: str) -> dict[str, list[list[Subject]]]:
 
     return weekdays
 
+
+def pretty_day(day: list[list[Subject]]) -> str:
+    lines = []
+    for time, lesson in zip(TIMES, day):
+        lines.append(f"{time}:")
+        if len(lesson) > 0:
+            for i, subj in enumerate(lesson, 1):
+                lines.append(f"{i}) {subj}\n")
+        else:
+            lines.append("Нет данных.\n")
+    return "\n".join(lines)
+
+
 if __name__ == "__main__":
-    weekdays = get_subjects("http://www.sgu.ru/schedule/knt/do/341")
+    gs = get_group_schedule("http://www.sgu.ru/schedule/knt/do/341")
     for day in DAYS:
-        for j, lesson in enumerate(weekdays[day]):
-            if lesson != []:
-                print(f"День {day}, занятие {j}: {lesson}")
+        print(day)
+        print(pretty_day(gs[day]))

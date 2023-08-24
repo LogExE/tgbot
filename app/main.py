@@ -8,34 +8,15 @@ from telegram.ext import (
 )
 from uuid import uuid4
 
-from uniparse import get_subjects, Subject, DAYS
+from parse_faculties import get_faculties
+from parse_groups import get_groups
+from parse_group_schedule import get_group_schedule, DAYS, pretty_day
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 
-times = [
-    "8:20-9:50",
-    "10:00-11:30",
-    "12:05-13:40",
-    "13:50-15:25",
-    "15:35-17:10",
-    "17:20-18:40",
-    "18:45-20:05",
-    "20:10-21:30",
-]
-
-
-def pretty_day(day: list[list[Subject]]) -> str:
-    lines = []
-    for time, lesson in zip(times, day):
-        lines.append(f"{time}:")
-        if len(lesson) > 0:
-            for i, subj in enumerate(lesson, 1):
-                lines.append(f"{i}) {subj}\n")
-        else:
-            lines.append('Нет данных.\n')
-    return "\n".join(lines)
+UNI_SITE = "https://www.sgu.ru"
 
 
 async def inline(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -47,7 +28,9 @@ async def inline(update: Update, context: ContextTypes.DEFAULT_TYPE):
             id=uuid4(),
             title=day,
             input_message_content=InputTextMessageContent(
-                pretty_day(get_subjects("http://www.sgu.ru/schedule/knt/do/341")[day])
+                pretty_day(
+                    get_group_schedule("http://www.sgu.ru/schedule/knt/do/341")[day]
+                )
             ),
         )
         for day in DAYS
