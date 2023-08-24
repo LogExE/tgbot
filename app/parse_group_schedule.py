@@ -22,12 +22,15 @@ class SubjWeek(Enum):
 class SubjType(Enum):
     LECTURE = 0
     PRACTICE = 1
+    LABORATORY = 2
 
     def __str__(self):
         if self == SubjType.LECTURE:
             return "лекция"
-        else:
+        elif self == SubjType.PRACTICE:
             return "практика"
+        else:
+            return "лаб. занятие"
 
 
 @dataclass
@@ -62,7 +65,12 @@ TIMES = [
 ]
 
 str_to_subjweek = {"чис.": SubjWeek.EVEN, "знам.": SubjWeek.ODD, "": SubjWeek.EVERY}
-str_to_subjtype = {"лек.": SubjType.LECTURE, "пр.": SubjType.PRACTICE, "": None}
+str_to_subjtype = {
+    "лек.": SubjType.LECTURE,
+    "пр.": SubjType.PRACTICE,
+    "лаб.": SubjType.LABORATORY,
+    "": None,
+}
 
 
 def get_group_schedule(url: str) -> dict[str, list[list[Subject]]]:

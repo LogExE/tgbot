@@ -73,17 +73,16 @@ async def day(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def show(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.log(logging.INFO, "Day  %s", update.message.text)
     await update.message.reply_text(
-        f'Спасибо за обращение. Расписание на день "{update.message.text}":'
-    )
-    await update.message.reply_text(
-        pretty_day(
+        f'Спасибо за обращение! Расписание на день "{update.message.text}":'
+        + pretty_day(
             get_group_schedule(UNI_SITE + context.chat_data["group_link"])[
                 update.message.text
             ]
         )
     )
     await update.message.reply_text(
-        "Если ничего не отобразилось, то, возможно, бот еще не умеет отображать расписание с вашего факультета."
+        "Для нового запроса снова напишите /start.\n"
+        "Если ничего не отобразилось, то, скорее всего, бот еще не научился отображать расписание с вашего факультета."
     )
     return ConversationHandler.END
 
