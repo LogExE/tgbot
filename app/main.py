@@ -50,7 +50,11 @@ async def fac_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def group_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.chat_data["fac_link"] = faculs[update.message.text]
+    try:
+        context.chat_data["fac_link"] = faculs[update.message.text]
+    except KeyError:
+        await update.message.reply_text("Не знаю такого факультета. Попробуй еще раз")
+        return
     logging.log(logging.INFO, "Fac link  %s", context.chat_data["fac_link"])
     context.chat_data["groups"] = get_groups(UNI_SITE + context.chat_data["fac_link"])
     await update.message.reply_text(
@@ -68,14 +72,22 @@ async def group_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def day_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.chat_data["group_link"] = context.chat_data["groups"][update.message.text]
+    try:
+        context.chat_data["group_link"] = context.chat_data["groups"][
+            update.message.text
+        ]
+    except KeyError:
+        await update.message.reply_text(
+            "Не знаю такой группы. Попробуй еще раз",
+        )
+        return
     logging.log(logging.INFO, "Group link  %s", context.chat_data["group_link"])
     await update.message.reply_text(
         f"Выбранная группа: {update.message.text}\nВыберите день.",
         reply_markup=ReplyKeyboardMarkup(
             [DAYS],
             one_time_keyboard=True,
-            input_field_placeholder="<группа>",
+            input_field_placeholder="<день>",
         ),
     )
     return DAY_SELECT
@@ -94,14 +106,18 @@ async def same(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def show(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        day = get_group_schedule(UNI_SITE + context.chat_data["group_link"])[
+            update.message.text
+        ]
+    except KeyError:
+        await update.message.reply_text(
+            "Не знаю такого дня. Попробуй еще раз",
+        )
+        return
     logging.log(logging.INFO, "Day  %s", update.message.text)
     await update.message.reply_text(
-        f'Спасибо за обращение! Расписание на день "{update.message.text}":\n'
-        + pretty_day(
-            get_group_schedule(UNI_SITE + context.chat_data["group_link"])[
-                update.message.text
-            ]
-        )
+        f'Спасибо за обращение! Расписание на день "{update.message.text}":\n\n{pretty_day(day)}'
     )
     await update.message.reply_text(
         "Для нового запроса напиши /another. Если интересны те же параметры группы/факультета, набери /same. Для выхода пиши /quit\n"
@@ -110,7 +126,7 @@ async def show(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return DONE
 
 
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("До встречи!", reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
 
