@@ -70,6 +70,8 @@ def get_group_schedule(url: str) -> dict[str, list[list[Subject]]]:
     soup = BeautifulSoup(page.content, "html.parser")
     juicy_table = soup.find("table", {"id": "schedule"})
     rows = juicy_table.find_all("tr")
+    if rows is None:
+        return {}
     rows = rows[1:]
     weekdays = {day: [] for day in DAYS}
     for row in rows:
@@ -83,7 +85,7 @@ def get_group_schedule(url: str) -> dict[str, list[list[Subject]]]:
                 other = e.find("div", {"class": "l-pr-g"})
                 name = e.find("div", {"class": "l-dn"})
                 teacher = e.find("div", {"class": "l-tn"})
-                place = e.find("div", {"class": "type_to_str[l-p"})
+                place = e.find("div", {"class": "l-p"})
                 subjects.append(
                     Subject(
                         name=name.text,
@@ -112,7 +114,7 @@ def pretty_day(day: list[list[Subject]]) -> str:
 
 
 if __name__ == "__main__":
-    gs = get_group_schedule("http://www.sgu.ru/schedule/knt/do/341")
+    gs = get_group_schedule("https://www.sgu.ru/schedule/mm/do/341")
     for day in DAYS:
         print(day)
         print(pretty_day(gs[day]))

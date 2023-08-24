@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 
-UNI_PAGE = "https://www.sgu.ru/schedule/"
+UNI_PAGE = "https://www.sgu.ru/schedule"
 
 
 def get_faculties() -> dict[str, str]:

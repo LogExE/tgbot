@@ -28,9 +28,9 @@ GROUP, DAY, SHOW = range(3)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Привет! Этот бот умеет выводить расписание с сайта СГУ. Пожалуйста, выбери факультет.\nДля отмены используй /cancel",
+        "Привет! Этот бот умеет выводить расписание с сайта СГУ. Пожалуйста, выбери факультет.\nДля отмены пиши /cancel",
         reply_markup=ReplyKeyboardMarkup(
-            [list(faculs.keys())],
+            [[fac] for fac in faculs.keys()],
             one_time_keyboard=True,
             input_field_placeholder="<факультет>",
         ),
@@ -40,14 +40,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def group(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.chat_data["fac_link"] = faculs[update.message.text]
+    logging.log(logging.INFO, "Fac link  %s", context.chat_data["fac_link"])
     context.chat_data["groups"] = get_groups(UNI_SITE + context.chat_data["fac_link"])
     await update.message.reply_text(
         (
-            f"Выбранный факультет: {update.message.text}, адрес {context.chat_data['fac']}\n"
+            f"Выбранный факультет: {update.message.text}, адрес {context.chat_data['fac_link']}\n"
             "Прошу выбрать группу."
         ),
         reply_markup=ReplyKeyboardMarkup(
-            [list(context.chat_data["groups"].keys())],
+            [[group] for group in context.chat_data["groups"].keys()],
             one_time_keyboard=True,
             input_field_placeholder="<группа>",
         ),
@@ -57,6 +58,7 @@ async def group(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def day(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.chat_data["group_link"] = context.chat_data["groups"][update.message.text]
+    logging.log(logging.INFO, "Group link  %s", context.chat_data["group_link"])
     await update.message.reply_text(
         f"Выбранная группа: {update.message.text}\nВыберите день.",
         reply_markup=ReplyKeyboardMarkup(
@@ -69,19 +71,25 @@ async def day(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def show(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Спасибо за обращение. Расписание:")
+    logging.log(logging.INFO, "Day  %s", update.message.text)
     await update.message.reply_text(
-        get_group_schedule(UNI_SITE + context.chat_data["group_link"])[
-            update.message.text
-        ]
+        f'Спасибо за обращение. Расписание на день "{update.message.text}":'
+    )
+    await update.message.reply_text(
+        pretty_day(
+            get_group_schedule(UNI_SITE + context.chat_data["group_link"])[
+                update.message.text
+            ]
+        )
+    )
+    await update.message.reply_text(
+        "Если ничего не отобразилось, то, возможно, бот еще не умеет отображать расписание с вашего факультета."
     )
     return ConversationHandler.END
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    await update.message.reply_text(
-        "До встречи!", reply_markup=ReplyKeyboardRemove()
-    )
+    await update.message.reply_text("До встречи!", reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
 
 
