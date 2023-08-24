@@ -1,10 +1,13 @@
 import os
 import logging
-from telegram import Update, InlineQueryResultArticle, InputTextMessageContent
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import (
     ApplicationBuilder,
+    CommandHandler,
     ContextTypes,
-    InlineQueryHandler,
+    ConversationHandler,
+    MessageHandler,
+    filters,
 )
 from uuid import uuid4
 
@@ -18,24 +21,68 @@ logging.basicConfig(
 
 UNI_SITE = "https://www.sgu.ru"
 
+faculs = get_faculties()
 
-async def inline(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.inline_query.query
-    if not query:
-        return
-    results = [
-        InlineQueryResultArticle(
-            id=uuid4(),
-            title=day,
-            input_message_content=InputTextMessageContent(
-                pretty_day(
-                    get_group_schedule("http://www.sgu.ru/schedule/knt/do/341")[day]
-                )
-            ),
-        )
-        for day in DAYS
-    ]
-    await context.bot.answer_inline_query(update.inline_query.id, results)
+GROUP, DAY, SHOW = range(3)
+
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "Привет! Этот бот умеет выводить расписание с сайта СГУ. Пожалуйста, выбери факультет.\nДля отмены используй /cancel",
+        reply_markup=ReplyKeyboardMarkup(
+            [list(faculs.keys())],
+            one_time_keyboard=True,
+            input_field_placeholder="<факультет>",
+        ),
+    )
+    return GROUP
+
+
+async def group(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.chat_data["fac_link"] = faculs[update.message.text]
+    context.chat_data["groups"] = get_groups(UNI_SITE + context.chat_data["fac_link"])
+    await update.message.reply_text(
+        (
+            f"Выбранный факультет: {update.message.text}, адрес {context.chat_data['fac']}\n"
+            "Прошу выбрать группу."
+        ),
+        reply_markup=ReplyKeyboardMarkup(
+            [list(context.chat_data["groups"].keys())],
+            one_time_keyboard=True,
+            input_field_placeholder="<группа>",
+        ),
+    )
+    return DAY
+
+
+async def day(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.chat_data["group_link"] = context.chat_data["groups"][update.message.text]
+    await update.message.reply_text(
+        f"Выбранная группа: {update.message.text}\nВыберите день.",
+        reply_markup=ReplyKeyboardMarkup(
+            [DAYS],
+            one_time_keyboard=True,
+            input_field_placeholder="<группа>",
+        ),
+    )
+    return SHOW
+
+
+async def show(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Спасибо за обращение. Расписание:")
+    await update.message.reply_text(
+        get_group_schedule(UNI_SITE + context.chat_data["group_link"])[
+            update.message.text
+        ]
+    )
+    return ConversationHandler.END
+
+
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    await update.message.reply_text(
+        "Хорошо, до встречи!", reply_markup=ReplyKeyboardRemove()
+    )
+    return ConversationHandler.END
 
 
 if __name__ == "__main__":
@@ -48,7 +95,15 @@ if __name__ == "__main__":
 
     application = ApplicationBuilder().token(tok).build()
 
-    inline_handler = InlineQueryHandler(inline)
-    application.add_handler(inline_handler)
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler("start", start)],
+        states={
+            GROUP: [MessageHandler(filters.TEXT & (~filters.COMMAND), group)],
+            DAY: [MessageHandler(filters.TEXT & (~filters.COMMAND), day)],
+            SHOW: [MessageHandler(filters.TEXT & (~filters.COMMAND), show)],
+        },
+        fallbacks=[CommandHandler("cancel", cancel)],
+    )
+    application.add_handler(conv_handler)
 
     application.run_polling()

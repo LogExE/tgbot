@@ -2,15 +2,15 @@ import requests
 from bs4 import BeautifulSoup
 
 
-def get_groups(url: str) -> list[str]:
+def get_groups(url: str) -> dict[str, str]:
     page = requests.get(url)
     soup = BeautifulSoup(page.content, "html.parser")
 
-    ret = []
+    ret = {}
     links = soup.find_all("a", href=True)
     for link in links:
-        if "/schedule/" in link["href"]:
-            ret.append(link["href"])
+        if "/schedule/" in link["href"] and len(link["href"].split('/')) == 5:
+            ret[link.text] = link["href"]
     return ret
 
 

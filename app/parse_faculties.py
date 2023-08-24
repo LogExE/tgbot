@@ -14,7 +14,7 @@ def get_faculties() -> dict[str, str]:
     items = div.find_all("li")
     for item in items:
         a = item.find("a")
-        ret[a.text] = a["href"].split("/")[-1]
+        ret[a.text] = a["href"]
 
     return ret
 
