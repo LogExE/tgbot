@@ -23,22 +23,33 @@ UNI_SITE = "https://www.sgu.ru"
 
 faculs = get_faculties()
 
-GROUP, DAY, SHOW = range(3)
+START, FAC_SELECT, GROUP_SELECT, DAY_SELECT, DONE = range(5)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Привет! Этот бот умеет выводить расписание с сайта СГУ. Пожалуйста, выбери факультет.\nДля отмены пиши /cancel",
+        "Привет! Этот бот умеет получать и выводить расписание СГУ. Просьба: не используйте его слишком часто, иначе ему прилетит блокировка с сайта СГУ.",
+        reply_markup=ReplyKeyboardMarkup(
+            [["Хорошо."]],
+            one_time_keyboard=True,
+        ),
+    )
+    return START
+
+
+async def fac_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "Пожалуйста, выбери факультет.",
         reply_markup=ReplyKeyboardMarkup(
             [[fac] for fac in faculs.keys()],
             one_time_keyboard=True,
             input_field_placeholder="<факультет>",
         ),
     )
-    return GROUP
+    return FAC_SELECT
 
 
-async def group(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def group_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.chat_data["fac_link"] = faculs[update.message.text]
     logging.log(logging.INFO, "Fac link  %s", context.chat_data["fac_link"])
     context.chat_data["groups"] = get_groups(UNI_SITE + context.chat_data["fac_link"])
@@ -53,10 +64,10 @@ async def group(update: Update, context: ContextTypes.DEFAULT_TYPE):
             input_field_placeholder="<группа>",
         ),
     )
-    return DAY
+    return GROUP_SELECT
 
 
-async def day(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def day_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.chat_data["group_link"] = context.chat_data["groups"][update.message.text]
     logging.log(logging.INFO, "Group link  %s", context.chat_data["group_link"])
     await update.message.reply_text(
@@ -67,7 +78,7 @@ async def day(update: Update, context: ContextTypes.DEFAULT_TYPE):
             input_field_placeholder="<группа>",
         ),
     )
-    return SHOW
+    return DAY_SELECT
 
 
 async def show(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -81,10 +92,10 @@ async def show(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     )
     await update.message.reply_text(
-        "Для нового запроса снова напишите /start.\n"
-        "Если ничего не отобразилось, то, скорее всего, бот еще не научился отображать расписание с вашего факультета."
+        "Для нового запроса напиши /another. Для выхода пиши /quit\n"
+        "Если расписание не отобразилось, то, скорее всего, бот еще не знает, как отображать расписание с вашего факультета."
     )
-    return ConversationHandler.END
+    return DONE
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -105,9 +116,18 @@ if __name__ == "__main__":
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
-            GROUP: [MessageHandler(filters.TEXT & (~filters.COMMAND), group)],
-            DAY: [MessageHandler(filters.TEXT & (~filters.COMMAND), day)],
-            SHOW: [MessageHandler(filters.TEXT & (~filters.COMMAND), show)],
+            START: [MessageHandler(filters.Regex("^Хорошо.$"), fac_select)],
+            FAC_SELECT: [
+                MessageHandler(filters.TEXT & (~filters.COMMAND), group_select)
+            ],
+            GROUP_SELECT: [
+                MessageHandler(filters.TEXT & (~filters.COMMAND), day_select)
+            ],
+            DAY_SELECT: [MessageHandler(filters.TEXT & (~filters.COMMAND), show)],
+            DONE: [
+                CommandHandler("another", fac_select),
+                CommandHandler("quit", cancel),
+            ],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
