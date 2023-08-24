@@ -84,7 +84,7 @@ async def day_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def show(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.log(logging.INFO, "Day  %s", update.message.text)
     await update.message.reply_text(
-        f'Спасибо за обращение! Расписание на день "{update.message.text}":'
+        f'Спасибо за обращение! Расписание на день "{update.message.text}":\n'
         + pretty_day(
             get_group_schedule(UNI_SITE + context.chat_data["group_link"])[
                 update.message.text
