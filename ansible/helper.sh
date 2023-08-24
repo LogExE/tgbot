@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
 echo "Ip?"
 read ip_ans
-ansible-playbook -i "$ip_ans", -u debuser --ask-vault-pass --ask-pass --ask-become-pass ansible/docker.yaml 
+echo "User?"
+read user_ans
+ansible-playbook -i "$ip_ans", -u "$user_ans" --ask-vault-pass --ask-pass --ask-become-pass docker.yaml 
