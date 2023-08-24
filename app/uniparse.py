@@ -41,11 +41,12 @@ class Subject:
             if self.week == SubjWeek.EVEN
             else "по знаменателю"
         )
-        return f"""
-        Пара: {type_to_str[self.type]} 
-        Предмет: {self.name}
-        Проходит: {self.place}, {week_str}, {self.other}
-        Преподаватель: {self.teacher}."""
+        return (
+            f"Пара: {type_to_str[self.type]}\n"
+            f"Предмет: {self.name}\n"
+            f"Проходит: {self.place}, {week_str}, {self.other}\n"
+            f"Преподаватель: {self.teacher}."
+        )
 
 
 DAYS = ["понедельник", "вторник", "среда", "четверг", "пятница", "суббота"]
@@ -84,16 +85,9 @@ def get_subjects(url: str) -> dict[str, list[list[Subject]]]:
 
     return weekdays
 
-
-def pretty_subjects(subjs):
-    lines = []
-    for i in range(6):
-        for j, subj in enumerate(subjs[i]):
-            if subj != []:
-                lines.append(f"День {i}, предмет {j}: {subj}")
-    return "\n".join(lines)
-
-
 if __name__ == "__main__":
-    weekdays = get_subjects("https://www.sgu.ru/schedule/knt/do/341")
-    print(pretty_subjects(weekdays))
+    weekdays = get_subjects("http://www.sgu.ru/schedule/knt/do/341")
+    for day in DAYS:
+        for j, lesson in enumerate(weekdays[day]):
+            if lesson != []:
+                print(f"День {day}, занятие {j}: {lesson}")

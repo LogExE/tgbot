@@ -28,10 +28,13 @@ times = [
 
 def pretty_day(day: list[list[Subject]]) -> str:
     lines = []
-    for time, subj in zip(times, day):
+    for time, lesson in zip(times, day):
         lines.append(f"{time}:")
-        for sub in subj:
-            lines.append(str(sub))
+        if len(lesson) > 0:
+            for i, subj in enumerate(lesson, 1):
+                lines.append(f"{i}) {subj}\n")
+        else:
+            lines.append('Нет данных.\n')
     return "\n".join(lines)
 
 
@@ -44,7 +47,7 @@ async def inline(update: Update, context: ContextTypes.DEFAULT_TYPE):
             id=uuid4(),
             title=day,
             input_message_content=InputTextMessageContent(
-                pretty_day(get_subjects("https://www.sgu.ru/schedule/knt/do/341")[day])
+                pretty_day(get_subjects("http://www.sgu.ru/schedule/knt/do/341")[day])
             ),
         )
         for day in DAYS
