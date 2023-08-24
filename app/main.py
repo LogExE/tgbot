@@ -80,7 +80,7 @@ async def show(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text(
-        "Хорошо, до встречи!", reply_markup=ReplyKeyboardRemove()
+        "До встречи!", reply_markup=ReplyKeyboardRemove()
     )
     return ConversationHandler.END
 
