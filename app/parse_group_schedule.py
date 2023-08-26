@@ -77,11 +77,11 @@ def get_group_schedule(url: str) -> dict[str, list[list[Subject]]]:
     page = requests.get(url)
     soup = BeautifulSoup(page.content, "html.parser")
     juicy_table = soup.find("table", {"id": "schedule"})
+    weekdays = {day: [] for day in DAYS}
     if juicy_table is None:
-        return {}
+        return weekdays
     rows = juicy_table.find_all("tr")
     rows = rows[1:]
-    weekdays = {day: [] for day in DAYS}
     for row in rows:
         data = row.find_all("td")
         for day, d in zip(DAYS, data):
