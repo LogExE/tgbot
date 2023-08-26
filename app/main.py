@@ -19,6 +19,10 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
+logger = logging.getLogger(__name__)
+
 UNI_SITE = "https://www.sgu.ru"
 
 faculs = get_faculties()
@@ -55,7 +59,7 @@ async def group_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except KeyError:
         await update.message.reply_text("Не знаю такого факультета. Попробуй еще раз")
         return
-    logging.log(logging.INFO, "Fac link  %s", context.chat_data["fac_link"])
+    logger.log(logging.INFO, "Fac link  %s", context.chat_data["fac_link"])
     context.chat_data["groups"] = get_groups(UNI_SITE + context.chat_data["fac_link"])
     await update.message.reply_text(
         (
@@ -81,7 +85,7 @@ async def day_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Не знаю такой группы. Попробуй еще раз",
         )
         return
-    logging.log(logging.INFO, "Group link  %s", context.chat_data["group_link"])
+    logger.log(logging.INFO, "Group link  %s", context.chat_data["group_link"])
     await update.message.reply_text(
         f"Выбранная группа: {update.message.text}\nВыберите день.",
         reply_markup=ReplyKeyboardMarkup(
@@ -115,7 +119,7 @@ async def show(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Не знаю такого дня. Попробуй еще раз",
         )
         return
-    logging.log(logging.INFO, "Day  %s", update.message.text)
+    logger.log(logging.INFO, "Day  %s", update.message.text)
     await update.message.reply_text(
         f'Спасибо за обращение! Расписание на день "{update.message.text}":\n\n{pretty_day(day)}'
     )
