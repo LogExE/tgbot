@@ -48,6 +48,7 @@ START, FAC_SELECT, GROUP_SELECT, DAY_SELECT, DONE = range(5)
 
 
 async def uni_down_msg(update: Update):
+    logger.log(logging.WARN, "Site is unreachable again...")
     await update.message.reply_text(
         "Сайт университета не отвечает. Возможно, бот сейчас находится во временной блокировке..."
     )
