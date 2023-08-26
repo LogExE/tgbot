@@ -1,9 +1,14 @@
 import requests
 from bs4 import BeautifulSoup
 
+from myshared import UniDownException
+
 
 def get_groups(url: str) -> dict[str, str]:
-    page = requests.get(url)
+    try:
+        page = requests.get(url)
+    except requests.exceptions.ConnectionError:
+        raise UniDownException()
     soup = BeautifulSoup(page.content, "html.parser")
 
     ret = {}

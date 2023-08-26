@@ -4,6 +4,8 @@ from bs4 import BeautifulSoup
 from enum import Enum
 from dataclasses import dataclass
 
+from myshared import UniDownException
+
 
 class SubjWeek(Enum):
     EVEN = 0
@@ -74,7 +76,10 @@ str_to_subjtype = {
 
 
 def get_group_schedule(url: str) -> dict[str, list[list[Subject]]]:
-    page = requests.get(url)
+    try:
+        page = requests.get(url)
+    except requests.exceptions.ConnectionError:
+        raise UniDownException()
     soup = BeautifulSoup(page.content, "html.parser")
     juicy_table = soup.find("table", {"id": "schedule"})
     weekdays = {day: [] for day in DAYS}

@@ -18,6 +18,7 @@ from telegram.ext import (
     ChatMemberHandler,
     filters,
 )
+from myshared import UniDownException
 
 from parse_faculties import get_faculties
 from parse_groups import get_groups
@@ -37,12 +38,19 @@ faculs = None
 
 
 def get_faculs():
+    global faculs
     if faculs is None:
         faculs = get_faculties()
     return faculs
 
 
 START, FAC_SELECT, GROUP_SELECT, DAY_SELECT, DONE = range(5)
+
+
+async def uni_down_msg(update: Update):
+    await update.message.reply_text(
+        "Сайт университета не отвечает. Возможно, бот сейчас находится во временной блокировке..."
+    )
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -57,20 +65,23 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def fac_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "Пожалуйста, выбери факультет.",
-        reply_markup=ReplyKeyboardMarkup(
-            [[fac] for fac in get_faculs.keys()],
-            one_time_keyboard=True,
-            input_field_placeholder="<факультет>",
-        ),
-    )
-    return FAC_SELECT
+    try:
+        await update.message.reply_text(
+            "Пожалуйста, выбери факультет.",
+            reply_markup=ReplyKeyboardMarkup(
+                [[fac] for fac in get_faculs().keys()],
+                one_time_keyboard=True,
+                input_field_placeholder="<факультет>",
+            ),
+        )
+        return FAC_SELECT
+    except UniDownException:
+        await uni_down_msg(update)
 
 
 async def group_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        context.chat_data["fac_link"] = get_faculs[update.message.text]
+        context.chat_data["fac_link"] = get_faculs()[update.message.text]
     except KeyError:
         await update.message.reply_text("Не знаю такого факультета. Попробуй еще раз")
         return
@@ -80,19 +91,24 @@ async def group_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
         update.message.text,
         context.chat_data["fac_link"],
     )
-    context.chat_data["groups"] = get_groups(UNI_SITE + context.chat_data["fac_link"])
-    await update.message.reply_text(
-        (
-            f"Выбранный факультет: {update.message.text}, адрес {context.chat_data['fac_link']}\n"
-            "Прошу выбрать группу."
-        ),
-        reply_markup=ReplyKeyboardMarkup(
-            [[group] for group in context.chat_data["groups"].keys()],
-            one_time_keyboard=True,
-            input_field_placeholder="<группа>",
-        ),
-    )
-    return GROUP_SELECT
+    try:
+        context.chat_data["groups"] = get_groups(
+            UNI_SITE + context.chat_data["fac_link"]
+        )
+        await update.message.reply_text(
+            (
+                f"Выбранный факультет: {update.message.text}, адрес {context.chat_data['fac_link']}\n"
+                "Прошу выбрать группу."
+            ),
+            reply_markup=ReplyKeyboardMarkup(
+                [[group] for group in context.chat_data["groups"].keys()],
+                one_time_keyboard=True,
+                input_field_placeholder="<группа>",
+            ),
+        )
+        return GROUP_SELECT
+    except UniDownException:
+        await uni_down_msg(update)
 
 
 async def day_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -143,6 +159,9 @@ async def show(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             "Не знаю такого дня. Попробуй еще раз",
         )
+        return
+    except UniDownException:
+        await uni_down_msg(update)
         return
     logger.log(logging.INFO, "Day  %s", update.message.text)
     await update.message.reply_text(

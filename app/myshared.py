@@ -1,0 +1,2 @@
+class UniDownException(Exception):
+    pass
