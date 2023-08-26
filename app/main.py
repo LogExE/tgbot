@@ -33,7 +33,14 @@ logger = logging.getLogger(__name__)
 
 UNI_SITE = "https://www.sgu.ru"
 
-faculs = get_faculties()
+faculs = None
+
+
+def get_faculs():
+    if faculs is None:
+        faculs = get_faculties()
+    return faculs
+
 
 START, FAC_SELECT, GROUP_SELECT, DAY_SELECT, DONE = range(5)
 
@@ -53,7 +60,7 @@ async def fac_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "Пожалуйста, выбери факультет.",
         reply_markup=ReplyKeyboardMarkup(
-            [[fac] for fac in faculs.keys()],
+            [[fac] for fac in get_faculs.keys()],
             one_time_keyboard=True,
             input_field_placeholder="<факультет>",
         ),
@@ -63,7 +70,7 @@ async def fac_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def group_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        context.chat_data["fac_link"] = faculs[update.message.text]
+        context.chat_data["fac_link"] = get_faculs[update.message.text]
     except KeyError:
         await update.message.reply_text("Не знаю такого факультета. Попробуй еще раз")
         return
