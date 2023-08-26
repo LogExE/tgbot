@@ -169,7 +169,7 @@ async def show(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f'Спасибо за обращение! Расписание на день "{update.message.text}":\n\n{pretty_day(day)}'
     )
     await update.message.reply_text(
-        "Для нового запроса напиши /another. Если интересны те же параметры группы/факультета, набери /same. Для выхода пиши /quit\n"
+        "Для нового запроса напиши \"запрос\". Если интересны те же параметры группы/факультета, набери \"ещё\". Для выхода пиши \"конец\"\n"
         "Если расписание не отобразилось, то, скорее всего, бот еще не знает, как отображать расписание с вашего факультета."
     )
     return DONE
@@ -261,7 +261,7 @@ if __name__ == "__main__":
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
-            START: [MessageHandler(filters.Regex("^Хорошо.$"), fac_select)],
+            START: [MessageHandler(filters.Text(["Хорошо."]), fac_select)],
             FAC_SELECT: [
                 MessageHandler(filters.TEXT & (~filters.COMMAND), group_select)
             ],
@@ -270,9 +270,9 @@ if __name__ == "__main__":
             ],
             DAY_SELECT: [MessageHandler(filters.TEXT & (~filters.COMMAND), show)],
             DONE: [
-                CommandHandler("another", fac_select),
-                CommandHandler("same", same),
-                CommandHandler("quit", cancel),
+                MessageHandler(filters.Text(["запрос"]), fac_select),
+                MessageHandler(filters.Text(["ещё"]), same),
+                MessageHandler(filters.Text(["конец"]), cancel),
             ],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
