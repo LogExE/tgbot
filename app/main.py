@@ -106,6 +106,7 @@ async def fac_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return FAC_SELECT
     except UniDownException:
         await uni_down_msg(update)
+        return
 
 
 async def teacher_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -115,7 +116,11 @@ async def teacher_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def exact_teacher_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.chat_data["teachers"] = teachers_search(update.message.text)
+    try:
+        context.chat_data["teachers"] = teachers_search(update.message.text)
+    except UniDownException:
+        await uni_down_msg(update)
+        return
     await update.message.reply_text(
         "Выбери из списка:",
         reply_markup=ReplyKeyboardMarkup(
