@@ -45,9 +45,21 @@ def get_faculs():
     return faculs
 
 
-START, FAC_SELECT, TEACHER_SELECT, GROUP_SELECT, DAY_SELECT, DONE = range(6)
+(
+    START,
+    SELECT_STEP,
+    FAC_SELECT,
+    TEACHER_SELECT,
+    EXACT_TEACHER_SELECT,
+    GROUP_SELECT,
+    DAY_SELECT,
+    DONE,
+) = range(8)
+
+QUERY_TEACHER, QUERY_GROUP = range(2)
 
 
+# FeelsBadMan
 async def uni_down_msg(update: Update):
     logger.log(logging.WARN, "Site is unreachable again...")
     await update.message.reply_text(
@@ -66,7 +78,20 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return START
 
 
+async def selection_step(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "По какому параметру хочешь посмотреть расписание?",
+        reply_markup=ReplyKeyboardMarkup(
+            [["Преподаватель"], ["Группа"]],
+            one_time_keyboard=True,
+            input_field_placeholder="<факультет>",
+        ),
+    )
+    return SELECT_STEP
+
+
 async def fac_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.chat_data["current_query"] = QUERY_GROUP
     try:
         await update.message.reply_text(
             "Пожалуйста, выбери факультет.",
@@ -81,12 +106,31 @@ async def fac_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await uni_down_msg(update)
 
 
+async def teacher_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.chat_data["current_query"] = QUERY_TEACHER
+    await update.message.reply_text("Напиши фамилию преподавателя.")
+    return TEACHER_SELECT
+
+
+async def exact_teacher_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.chat_data["teachers"] = teachers_search(update.message.text)
+    await update.message.reply_text(
+        "Выбери из списка:",
+        reply_markup=ReplyKeyboardMarkup(
+            [[fio] for fio in map(lambda t: t["fio"], context.chat_data["teachers"])],
+            one_time_keyboard=True,
+            input_field_placeholder="<преподаватель>",
+        ),
+    )
+    return EXACT_TEACHER_SELECT
+
+
 async def group_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        context.chat_data["fac_link"] = get_faculs()[update.message.text]
-    except KeyError:
+    facs = get_faculs()
+    if update.message.text not in facs:
         await update.message.reply_text("Не знаю такого факультета. Попробуй еще раз")
         return
+    context.chat_data["fac_link"] = facs[update.message.text]
     logger.log(
         logging.INFO,
         "Fac %s, link  %s",
@@ -114,29 +158,59 @@ async def group_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def day_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
+    if context.chat_data["current_query"] == QUERY_GROUP:
+        if update.message.text not in context.chat_data["groups"]:
+            await update.message.reply_text(
+                "Не знаю такой группы. Попробуй еще раз",
+            )
+            return
         context.chat_data["group_link"] = context.chat_data["groups"][
             update.message.text
         ]
-    except KeyError:
-        await update.message.reply_text(
-            "Не знаю такой группы. Попробуй еще раз",
+        logger.log(
+            logging.INFO,
+            "Group %s, link  %s",
+            update.message.text,
+            context.chat_data["group_link"],
         )
-        return
-    logger.log(
-        logging.INFO,
-        "Group %s, link  %s",
-        update.message.text,
-        context.chat_data["group_link"],
-    )
-    await update.message.reply_text(
-        f"Выбранная группа: {update.message.text}\nВыберите день.",
-        reply_markup=ReplyKeyboardMarkup(
-            [DAYS],
-            one_time_keyboard=True,
-            input_field_placeholder="<день>",
-        ),
-    )
+        await update.message.reply_text(
+            f"Выбранная группа: {update.message.text}\nВыберите день.",
+            reply_markup=ReplyKeyboardMarkup(
+                [DAYS],
+                one_time_keyboard=True,
+                input_field_placeholder="<день>",
+            ),
+        )
+    else:
+        teacher = [
+            teacher
+            for teacher in context.chat_data["teachers"]
+            if teacher["fio"] == update.message.text
+        ]
+        if len(teacher) == 0:
+            await update.message.reply_text(
+                "Не знаю такого преподавателя. Попробуй еще раз",
+            )
+            return
+        context.chat_data["teacher_id"] = teacher[0]["id"][2:]  # omit 'id' in string
+        logger.log(
+            logging.INFO,
+            "Teacher %s, id  %s",
+            update.message.text,
+            context.chat_data["teacher_id"],
+        )
+        # lol
+        context.chat_data["group_link"] = (
+            "/schedule/teacher/" + context.chat_data["teacher_id"]
+        )
+        await update.message.reply_text(
+            f"Выбранный преподаватель: {update.message.text}\nВыберите день.",
+            reply_markup=ReplyKeyboardMarkup(
+                [DAYS],
+                one_time_keyboard=True,
+                input_field_placeholder="<день>",
+            ),
+        )
     return DAY_SELECT
 
 
@@ -153,15 +227,15 @@ async def same(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def show(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        day = get_group_schedule(UNI_SITE + context.chat_data["group_link"])[
-            update.message.text
-        ]
-    except KeyError:
+    if update.message.text not in DAYS:
         await update.message.reply_text(
             "Не знаю такого дня. Попробуй еще раз",
         )
         return
+    try:
+        day = get_group_schedule(UNI_SITE + context.chat_data["group_link"])[
+            update.message.text
+        ]
     except UniDownException:
         await uni_down_msg(update)
         return
@@ -170,8 +244,8 @@ async def show(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f'Спасибо за обращение! Расписание на день "{update.message.text}":\n\n{pretty_day(day)}'
     )
     await update.message.reply_text(
-        "Для нового запроса напиши \"запрос\". Если интересны те же параметры группы/факультета, набери \"ещё\". Для выхода пиши \"конец\"\n"
-        "Если расписание не отобразилось, то, скорее всего, бот еще не знает, как отображать расписание с вашего факультета."
+        'Для нового запроса напиши "запрос". Если нужно получить расписание на другой день с теми же параметрами, набери "ещё".\n'
+        "Если расписание не отобразилось, то, скорее всего, бот еще не знает, как отображать расписание по твоему запросу."
     )
     return DONE
 
@@ -262,7 +336,17 @@ if __name__ == "__main__":
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
-            START: [MessageHandler(filters.Text(["Хорошо."]), fac_select)],
+            START: [MessageHandler(filters.Text(["Хорошо."]), selection_step)],
+            SELECT_STEP: [
+                MessageHandler(filters.Text(["Преподаватель"]), teacher_select),
+                MessageHandler(filters.Text(["Группа"]), fac_select),
+            ],
+            TEACHER_SELECT: [
+                MessageHandler(filters.TEXT & (~filters.COMMAND), exact_teacher_select)
+            ],
+            EXACT_TEACHER_SELECT: [
+                MessageHandler(filters.TEXT & (~filters.COMMAND), day_select)
+            ],
             FAC_SELECT: [
                 MessageHandler(filters.TEXT & (~filters.COMMAND), group_select)
             ],
@@ -273,7 +357,6 @@ if __name__ == "__main__":
             DONE: [
                 MessageHandler(filters.Text(["запрос"]), fac_select),
                 MessageHandler(filters.Text(["ещё"]), same),
-                MessageHandler(filters.Text(["конец"]), cancel),
             ],
         },
         fallbacks=[CommandHandler("cancel", cancel)],

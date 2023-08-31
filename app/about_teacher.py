@@ -5,7 +5,7 @@ from myshared import UniDownException
 TEACHERS_ADDR = "https://www.sgu.ru/schedule/teacher/search"
 
 
-def teachers_search(name: str) -> str:
+def teachers_search(name: str) -> list[dict[str, str]]:
     try:
         resp = requests.post(TEACHERS_ADDR, data={"js": 1, "search": name})
         return resp.json()
