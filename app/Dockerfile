@@ -8,4 +8,5 @@ COPY parse_faculties.py .
 COPY parse_groups.py .
 COPY parse_group_schedule.py .
 COPY myshared.py .
+COPY about_teacher.py .
 CMD ["python", "main.py"]

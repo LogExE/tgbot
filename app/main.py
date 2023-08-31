@@ -23,6 +23,7 @@ from myshared import UniDownException
 from parse_faculties import get_faculties
 from parse_groups import get_groups
 from parse_group_schedule import get_group_schedule, DAYS, pretty_day
+from about_teacher import teachers_search
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -44,7 +45,7 @@ def get_faculs():
     return faculs
 
 
-START, FAC_SELECT, GROUP_SELECT, DAY_SELECT, DONE = range(5)
+START, FAC_SELECT, TEACHER_SELECT, GROUP_SELECT, DAY_SELECT, DONE = range(6)
 
 
 async def uni_down_msg(update: Update):
