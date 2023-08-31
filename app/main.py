@@ -164,14 +164,14 @@ async def day_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "Не знаю такой группы. Попробуй еще раз",
             )
             return
-        context.chat_data["group_link"] = context.chat_data["groups"][
+        context.chat_data["query_link"] = context.chat_data["groups"][
             update.message.text
         ]
         logger.log(
             logging.INFO,
             "Group %s, link  %s",
             update.message.text,
-            context.chat_data["group_link"],
+            context.chat_data["query_link"],
         )
         await update.message.reply_text(
             f"Выбранная группа: {update.message.text}\nВыберите день.",
@@ -199,8 +199,7 @@ async def day_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
             update.message.text,
             context.chat_data["teacher_id"],
         )
-        # lol
-        context.chat_data["group_link"] = (
+        context.chat_data["query_link"] = (
             "/schedule/teacher/" + context.chat_data["teacher_id"]
         )
         await update.message.reply_text(
@@ -233,7 +232,7 @@ async def show(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
     try:
-        day = get_group_schedule(UNI_SITE + context.chat_data["group_link"])[
+        day = get_group_schedule(UNI_SITE + context.chat_data["query_link"])[
             update.message.text
         ]
     except UniDownException:
