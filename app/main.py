@@ -71,7 +71,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "Привет! Этот бот умеет получать и выводить расписание СГУ.\n"
         "Просьба: не используйте его слишком часто, иначе ему прилетит блокировка с сайта СГУ.\n"
-        "Если бот перестал отвечать посреди запроса - скорее всего его разработчик посеял баг и из-за этого бот со спокойной совестью прилег с ошибкой : )",
+        "ℹ️ Если бот перестал отвечать посреди запроса - скорее всего его разработчик посеял баг и из-за этого бот со спокойной совестью прилег с ошибкой : )",
         reply_markup=ReplyKeyboardMarkup(
             [["Хорошо."]],
             one_time_keyboard=True,
@@ -135,7 +135,7 @@ async def exact_teacher_select(update: Update, context: ContextTypes.DEFAULT_TYP
 async def group_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
     facs = get_faculs()
     if update.message.text not in facs:
-        await update.message.reply_text("Не знаю такого факультета. Попробуй еще раз")
+        await update.message.reply_text("⚠️ Не знаю такого факультета. Попробуй еще раз")
         return
     context.chat_data["fac_link"] = facs[update.message.text]
     logger.log(
@@ -150,7 +150,7 @@ async def group_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         await update.message.reply_text(
             (
-                f"Выбранный факультет: {update.message.text}, адрес {context.chat_data['fac_link']}\n"
+                f"✅ Выбранный факультет: {update.message.text}, адрес {context.chat_data['fac_link']}\n"
                 "Прошу выбрать группу."
             ),
             reply_markup=ReplyKeyboardMarkup(
@@ -173,7 +173,7 @@ async def day_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.chat_data["current_query"] == QUERY_GROUP:
         if update.message.text not in context.chat_data["groups"]:
             await update.message.reply_text(
-                "Не знаю такой группы. Попробуй еще раз",
+                "⚠️ Не знаю такой группы. Попробуй еще раз",
             )
             return
         context.chat_data["query_link"] = context.chat_data["groups"][
@@ -186,7 +186,7 @@ async def day_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context.chat_data["query_link"],
         )
         await update.message.reply_text(
-            f"Выбранная группа: {update.message.text}\nВыберите день.",
+            f"✅ Выбранная группа: {update.message.text}\nВыберите день.",
             reply_markup=day_markup,
         )
     else:
@@ -197,7 +197,7 @@ async def day_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
         if len(teacher) == 0:
             await update.message.reply_text(
-                "Не знаю такого преподавателя. Попробуй еще раз",
+                "⚠️ Не знаю такого преподавателя. Попробуй еще раз",
             )
             return
         context.chat_data["teacher_id"] = teacher[0]["id"][2:]  # omit 'id' in string
@@ -211,7 +211,7 @@ async def day_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "/schedule/teacher/" + context.chat_data["teacher_id"]
         )
         await update.message.reply_text(
-            f"Выбранный преподаватель: {update.message.text}\nВыберите день.",
+            f"✅ Выбранный преподаватель: {update.message.text}\nВыберите день.",
             reply_markup=day_markup,
         )
     return DAY_SELECT
@@ -232,7 +232,7 @@ async def same(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def show(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.text not in DAYS:
         await update.message.reply_text(
-            "Не знаю такого дня. Попробуй еще раз",
+            "⚠️ Не знаю такого дня. Попробуй еще раз",
         )
         return
     try:
@@ -244,10 +244,10 @@ async def show(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     logger.log(logging.INFO, "Day %s", update.message.text)
     await update.message.reply_text(
-        f'Спасибо за обращение! Расписание на день "{update.message.text}":\n\n{pretty_day(day)}'
+        f'🆗 Спасибо за обращение! Расписание на день "{update.message.text}":\n\n{pretty_day(day)}'
     )
     await update.message.reply_text(
-        'Для нового запроса напиши "запрос". Если нужно получить расписание на другой день с теми же параметрами, набери "ещё".\n'
+        'ℹ️ Для нового запроса напиши "запрос". Если нужно получить расписание на другой день с теми же параметрами, набери "ещё".\n'
         "Если расписание не отобразилось, то, скорее всего, бот еще не знает, как отображать расписание по твоему запросу.",
         reply_markup=ReplyKeyboardMarkup([["запрос"], ["ещё"]], one_time_keyboard=True),
     )
