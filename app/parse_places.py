@@ -1,14 +1,13 @@
 import requests
 from bs4 import BeautifulSoup
 
-from myshared import UniDownException
-
-UNI_PAGE = "https://www.sgu.ru/schedule"
+from myshared import UniDownException, UNI_PAGE
 
 
-def get_faculties() -> dict[str, str]:
+def get_places() -> dict[str, str]:
+    """returns in format: place_name -> url"""
     try:
-        page = requests.get(UNI_PAGE)
+        page = requests.get(UNI_PAGE + "/schedule")
     except requests.exceptions.ConnectionError:
         raise UniDownException()
 
@@ -26,4 +25,4 @@ def get_faculties() -> dict[str, str]:
 
 
 if __name__ == "__main__":
-    print(get_faculties())
+    print(get_places())

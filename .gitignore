@@ -3,3 +3,4 @@
 __pycache__
 .env
 mock_site/site
+tgbotdata.db

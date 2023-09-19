@@ -1,6 +1,9 @@
 import os
 import logging
 from typing import Optional, Tuple
+import sqlite3
+from contextlib import closing
+
 from telegram import (
     Chat,
     ChatMember,
@@ -18,9 +21,9 @@ from telegram.ext import (
     ChatMemberHandler,
     filters,
 )
-from myshared import UniDownException
 
-from parse_faculties import get_faculties
+from myshared import UniDownException, UNI_PAGE
+from parse_places import get_places
 from parse_groups import get_groups
 from parse_group_schedule import get_group_schedule, DAYS, pretty_day
 from about_teacher import teachers_search
@@ -33,16 +36,58 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
-UNI_SITE = "https://www.sgu.ru"
-
-faculs = None
+DB_FILE = "tgbotdata.db"
 
 
-def get_faculs():
-    global faculs
-    if faculs is None:
-        faculs = get_faculties()
-    return faculs
+def connect_and_init_db() -> sqlite3.Connection:
+    con = sqlite3.connect(DB_FILE)
+    with closing(con.cursor()) as cur:
+        cur.execute("CREATE TABLE IF NOT EXISTS place (name, url)")
+        cur.execute("CREATE TABLE IF NOT EXISTS study_group (name, url, place_id)")
+        cur.execute("CREATE TABLE IF NOT EXISTS teacher (name, sguid)")
+        cur.execute(
+            "CREATE TABLE IF NOT EXISTS schedule_entry (discipline_name, type, week, location, auditorium, day, teacher_name, info, count)"
+        )
+        cur.execute(
+            "CREATE TABLE IF NOT EXISTS study_group_to_schedule_entry (study_group_id, schedule_entry_id)"
+        )
+    return con
+
+
+def db_update_places(con: sqlite3.Connection):
+    places = get_places()
+    with closing(con.cursor()) as cur:
+        cur.executemany("INSERT INTO place VALUES (?, ?)", places.items())
+        con.commit()
+
+
+def db_get_places(con: sqlite3.Connection) -> list[tuple[str, str]]:
+    with closing(con.cursor()) as cur:
+        return cur.execute("SELECT place.name, place.url FROM place").fetchall()
+
+
+def db_update_groups(place: str, con: sqlite3.Connection):
+    with closing(con.cursor()) as cur:
+        place_id, place_url = cur.execute(
+            "SELECT place.rowid, place.url FROM place WHERE place.name = ?",
+            (place,),
+        ).fetchone()
+        groups = get_groups(UNI_PAGE + place_url)
+        cur.executemany(
+            "INSERT INTO study_group VALUES (?, ?, ?)",
+            [(name, url, place_id) for name, url in groups.items()],
+        )
+        con.commit()
+
+
+def db_get_groups(place: str, con: sqlite3.Connection) -> list[tuple[str, str, int]]:
+    with closing(con.cursor()) as cur:
+        return cur.execute(
+            "SELECT study_group.name, study_group.url, study_group.place_id FROM study_group\n"
+            "JOIN place BY study_group.place_id = place.rowid\n"
+            "WHERE place.name = ?",
+            place,
+        ).fetchall()
 
 
 (
@@ -135,7 +180,9 @@ async def exact_teacher_select(update: Update, context: ContextTypes.DEFAULT_TYP
 async def group_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
     facs = get_faculs()
     if update.message.text not in facs:
-        await update.message.reply_text("⚠️ Не знаю такого факультета. Попробуй еще раз")
+        await update.message.reply_text(
+            "⚠️ Не знаю такого факультета. Попробуй еще раз"
+        )
         return
     context.chat_data["fac_link"] = facs[update.message.text]
     logger.log(

@@ -43,6 +43,7 @@ class Subject:
     other: str
     type: SubjType
     week: SubjWeek
+    groups: [str]
 
     def __str__(self):
         return (
